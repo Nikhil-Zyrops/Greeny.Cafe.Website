@@ -1,0 +1,15 @@
+# Portable development software (local binaries/data)
+/mariadb/
+/php/
+
+# Temp files
+*.zip
+*.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
