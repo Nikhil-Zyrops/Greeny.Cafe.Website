@@ -44,14 +44,29 @@ class OrderController extends Controller
         }
 
         try {
+            // Pre-initialize sequence setting outside transaction to ensure collection and document exist
+            $sequenceSetting = SystemSetting::where('key', 'order_sequence')->first();
+            if (!$sequenceSetting) {
+                SystemSetting::create([
+                    'key' => 'order_sequence',
+                    'value' => '0'
+                ]);
+            }
+
+            // Pre-initialize tax percentage setting if missing
+            $taxPercentageSetting = SystemSetting::where('key', 'tax_percentage')->first();
+            if (!$taxPercentageSetting) {
+                SystemSetting::create([
+                    'key' => 'tax_percentage',
+                    'value' => '7.5'
+                ]);
+            }
+
             $order = DB::transaction(function() use ($request) {
-                // 1. Get and increment sequence number safely
+                // 1. Get and increment sequence number safely inside transaction
                 $sequenceSetting = SystemSetting::where('key', 'order_sequence')->first();
                 if (!$sequenceSetting) {
-                    $sequenceSetting = SystemSetting::create([
-                        'key' => 'order_sequence',
-                        'value' => '0'
-                    ]);
+                    throw new \Exception("System setting 'order_sequence' is missing or failed to initialize.");
                 }
                 $seqVal = (int) $sequenceSetting->value + 1;
                 $sequenceSetting->value = (string) $seqVal;
@@ -140,10 +155,13 @@ class OrderController extends Controller
                 'data' => $order->load('items')
             ], 201);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ], 400);
         }
     }
