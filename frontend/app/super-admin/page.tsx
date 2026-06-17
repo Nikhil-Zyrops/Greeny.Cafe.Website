@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
 import { User, AuditLog } from "@/types";
 import Topbar from "@/components/common/Topbar";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -355,12 +356,17 @@ export default function SuperAdminDashboard() {
 
         {/* Content */}
         <main className="flex-1 space-y-6">
-          
-          {/* ==========================================
-              TAB: USER MANAGEMENT
-              ========================================== */}
-          {activeTab === "users" && (
-            <div className="space-y-4">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {activeTab === "users" && (
+                <div className="space-y-4">
               <div className="flex justify-between items-center px-1">
                 <h2 className="text-lg font-bold font-display text-text">Staff & Admin Users</h2>
                 <Button 
@@ -811,8 +817,9 @@ export default function SuperAdminDashboard() {
                 </CardContent>
               </Card>
             </div>
-          )}
-
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

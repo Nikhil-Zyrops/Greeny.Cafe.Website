@@ -2,10 +2,11 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut, ShieldAlert } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function Topbar() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function Topbar() {
   const { theme, setTheme } = useTheme();
   const { user, logout, initialize } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [showNoAccessModal, setShowNoAccessModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -30,10 +32,21 @@ export default function Topbar() {
     : "";
 
   const handleRoleChange = (role: string) => {
+    if ((role === "admin" || role === "super-admin") && user?.role === "staff") {
+      setShowNoAccessModal(true);
+      return;
+    }
+
     if (role === "customer") router.push("/customer");
     else if (role === "staff") router.push("/staff");
     else if (role === "admin") router.push("/admin");
     else if (role === "super-admin") router.push("/super-admin");
+  };
+
+  const handleGoToLogin = () => {
+    setShowNoAccessModal(false);
+    logout();
+    router.push("/login");
   };
 
   const handleLogout = () => {
@@ -176,6 +189,41 @@ export default function Topbar() {
           ⚙️ Super Admin
         </button>
       </div>
+
+      {/* Access Control Dialog Modal */}
+      <Dialog open={showNoAccessModal} onOpenChange={setShowNoAccessModal}>
+        <DialogContent className="sm:max-w-[400px] border-border bg-surface/95 backdrop-blur-md shadow-2xl rounded-2xl p-6">
+          <DialogHeader className="flex flex-col items-center text-center space-y-3">
+            <div className="w-14 h-14 bg-destructive/10 text-destructive rounded-full flex items-center justify-center border border-destructive/20 animate-pulse">
+              <ShieldAlert size={28} />
+            </div>
+            <DialogTitle className="font-display text-lg font-bold text-destructive">
+              Access Denied
+            </DialogTitle>
+            <DialogDescription className="text-text-2 text-xs leading-normal">
+              You do not have administrative privileges to access the Admin Panel. Please switch to an administrator account to view dashboard settings and analytics.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowNoAccessModal(false)}
+              className="border-border hover:bg-surface-2 rounded-lg text-xs font-semibold"
+            >
+              Return
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGoToLogin}
+              className="bg-primary hover:bg-primary/95 text-white font-bold rounded-lg text-xs flex-1 shadow-md"
+            >
+              Sign In to Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

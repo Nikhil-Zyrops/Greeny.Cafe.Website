@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, ShoppingCart, Trash2, Plus, Minus, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CustomerPage() {
   const { items, subtotal, tax, total, updateQty, removeItem, clearCart, setTaxRate } = useCartStore();
@@ -303,11 +304,25 @@ export default function CustomerPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredItems.map((item) => (
-                  <MenuCard key={item.id} item={item} />
-                ))}
-              </div>
+              <motion.div 
+                layout
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+              >
+                <AnimatePresence mode="popLayout">
+                  {filteredItems.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                    >
+                      <MenuCard item={item} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             )}
           </div>
 
@@ -425,40 +440,50 @@ export default function CustomerPage() {
               ) : (
                 <>
                   <div className="max-h-[280px] overflow-y-auto space-y-3 pr-1">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-2 border-b border-border/40 pb-2 text-xs">
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-lg bg-surface-2 p-1.5 rounded-lg border border-border">{item.emoji}</span>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-text leading-tight">{item.name}</span>
-                            <span className="text-[10px] text-text-3">₹{Number(item.price).toFixed(2)} each</span>
-                          </div>
-                        </div>
-                        {/* Qty Controls */}
-                        <div className="flex items-center gap-1.5 bg-surface-2 px-2 py-1 rounded-lg border border-border">
-                          <button 
-                            onClick={() => updateQty(item.id, -1)}
-                            className="text-text-3 hover:text-text cursor-pointer"
-                          >
-                            <Minus size={10} />
-                          </button>
-                          <span className="font-bold font-mono text-[10px] text-text w-4 text-center">{item.qty}</span>
-                          <button 
-                            onClick={() => updateQty(item.id, 1)}
-                            className="text-text-3 hover:text-text cursor-pointer"
-                          >
-                            <Plus size={10} />
-                          </button>
-                        </div>
-                        {/* Remove */}
-                        <button 
-                          onClick={() => removeItem(item.id)}
-                          className="text-text-3 hover:text-destructive p-1 rounded transition-colors"
+                    <AnimatePresence initial={false}>
+                      {items.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-between gap-2 border-b border-border/40 pb-2 text-xs"
                         >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-lg bg-surface-2 p-1.5 rounded-lg border border-border">{item.emoji}</span>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-text leading-tight">{item.name}</span>
+                              <span className="text-[10px] text-text-3">₹{Number(item.price).toFixed(2)} each</span>
+                            </div>
+                          </div>
+                          {/* Qty Controls */}
+                          <div className="flex items-center gap-1.5 bg-surface-2 px-2 py-1 rounded-lg border border-border">
+                            <button 
+                              onClick={() => updateQty(item.id, -1)}
+                              className="text-text-3 hover:text-text cursor-pointer"
+                            >
+                              <Minus size={10} />
+                            </button>
+                            <span className="font-bold font-mono text-[10px] text-text w-4 text-center">{item.qty}</span>
+                            <button 
+                              onClick={() => updateQty(item.id, 1)}
+                              className="text-text-3 hover:text-text cursor-pointer"
+                            >
+                              <Plus size={10} />
+                            </button>
+                          </div>
+                          {/* Remove */}
+                          <button 
+                            onClick={() => removeItem(item.id)}
+                            className="text-text-3 hover:text-destructive p-1 rounded transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
 
                   <div className="border-t border-border pt-3 space-y-2 text-xs font-sans">

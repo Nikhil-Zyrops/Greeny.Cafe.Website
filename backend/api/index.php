@@ -31,24 +31,22 @@ $app = require_once __DIR__.'/../bootstrap/app.php';
 // 5. Override storage path to writable /tmp
 $app->useStoragePath('/tmp');
 
-// 6. Programmatically run migrations and seeders if database is empty
-if (filesize($dbPath) === 0) {
+// 6. Programmatically run seeders if MongoDB database is empty
+try {
     /** @var \Illuminate\Contracts\Console\Kernel $consoleKernel */
     $consoleKernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
-    
-    try {
-        // Run migrations
-        $consoleKernel->call('migrate', ['--force' => true]);
-        
-        // Run seeders
+    $consoleKernel->bootstrap();
+
+    if (\App\Models\User::count() === 0) {
+        // Run seeders (which also ensures unique indexes are created first)
         $consoleKernel->call('db:seed', ['--force' => true]);
-    } catch (\Throwable $e) {
-        header('Content-Type: text/plain');
-        echo "Artisan initialization failed!\n";
-        echo "Error: " . $e->getMessage() . "\n";
-        echo "Trace:\n" . $e->getTraceAsString() . "\n";
-        exit;
     }
+} catch (\Throwable $e) {
+    header('Content-Type: text/plain');
+    echo "Artisan initialization failed!\n";
+    echo "Error: " . $e->getMessage() . "\n";
+    echo "Trace:\n" . $e->getTraceAsString() . "\n";
+    exit;
 }
 
 // Force-update the whatsapp_number setting value in the SQLite database to the user's phone number

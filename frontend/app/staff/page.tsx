@@ -10,6 +10,7 @@ import OrderQueueCard from "@/components/staff/OrderQueueCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Toaster } from "@/components/ui/sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { ClipboardList, TrendingUp, ShieldAlert, Award, Star, Clock } from "lucide-react";
 
@@ -150,8 +151,16 @@ export default function StaffDashboard() {
 
         {/* Main Content Area */}
         <main className="flex-1 space-y-6">
-          {activeTab === "queue" ? (
-            <>
+          <AnimatePresence mode="wait">
+            {activeTab === "queue" ? (
+              <motion.div
+                key="queue"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
               {/* Order Stat Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="border-border shadow-sm">
@@ -212,10 +221,17 @@ export default function StaffDashboard() {
                   </div>
                 </div>
               )}
-            </>
-          ) : (
-            /* Performance Tab content */
-            <div className="space-y-6">
+              </motion.div>
+            ) : (
+              /* Performance Tab content */
+              <motion.div
+                key="performance"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
               {/* Performance Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="border-border shadow-sm">
@@ -299,8 +315,9 @@ export default function StaffDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
 import { MenuItem, Ingredient, Order, FoodType } from "@/types";
 import Topbar from "@/components/common/Topbar";
+import { motion, AnimatePresence } from "framer-motion";
 import RevenueCalendar from "@/components/admin/RevenueCalendar";
 import { WeeklyRevenueChart, PeakHoursChart, TopSellingItemsChart } from "@/components/admin/AnalyticsChart";
 import { Card, CardContent } from "@/components/ui/card";
@@ -337,12 +338,17 @@ export default function AdminDashboard() {
 
         {/* Main Content Area */}
         <main className="flex-1 space-y-6">
-          
-          {/* ==========================================
-              TAB: DASHBOARD
-              ========================================== */}
-          {activeTab === "dashboard" && (
-            <>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {activeTab === "dashboard" && (
+                <>
               {/* 8 Stat Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card className="border-border shadow-sm">
@@ -909,11 +915,12 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ==========================================
-              TAB: REVENUE CALENDAR
-              ========================================== */}
-          {activeTab === "calendar" && <RevenueCalendar />}
-
+              {/* ==========================================
+                  TAB: REVENUE CALENDAR
+                  ========================================== */}
+              {activeTab === "calendar" && <RevenueCalendar />}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>
