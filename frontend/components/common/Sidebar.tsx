@@ -66,12 +66,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
 
   const hasAccess = (itemRole: string) => {
-    if (!user) return itemRole === "customer" || itemRole === "staff";
+    if (!user) return itemRole === "customer";
     const userRole = user.role;
     if (userRole === "super_admin") return true;
     if (userRole === "admin") return itemRole !== "super_admin";
     if (userRole === "staff") return itemRole === "customer" || itemRole === "staff";
-    if (userRole === "customer") return itemRole === "customer" || itemRole === "staff";
     return itemRole === "customer";
   };
 
@@ -101,7 +100,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (deniedTarget === "super-admin") {
       return "You do not have Super Admin privileges. Please sign in with a Super Admin account to access system settings, backups, and user audit logs.";
     }
-    return "You do not have administrative privileges to access the Manager Panel. Please switch to an administrator account to view sales settings, menu editing, and dashboard analytics.";
+    if (deniedTarget === "admin") {
+      return "You do not have administrative privileges to access the Manager Panel. Please switch to an administrator account to view sales settings, menu editing, and dashboard analytics.";
+    }
+    return "You do not have staff privileges to access the Staff Queue. Please switch to a staff or manager account to view the kitchen orders queue and update order statuses.";
   };
 
   const SidebarContent = () => (

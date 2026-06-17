@@ -31,11 +31,28 @@ export default function StaffDashboard() {
     customer_rating: 4.8
   });
 
-  // Verify auth (staff page is unlocked for everyone)
+  // Verify auth
   useEffect(() => {
     initialize();
-    setLoading(false);
-  }, [initialize]);
+    const t = localStorage.getItem("token");
+    const uStr = localStorage.getItem("user");
+
+    if (!t || !uStr) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const u = JSON.parse(uStr);
+      if (u.role === "customer") {
+        router.push("/customer");
+        return;
+      }
+      setLoading(false);
+    } catch {
+      router.push("/login");
+    }
+  }, [initialize, router]);
 
   // Fetch orders and performance
   useEffect(() => {
