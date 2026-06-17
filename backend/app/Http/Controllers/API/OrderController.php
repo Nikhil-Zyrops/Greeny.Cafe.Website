@@ -46,13 +46,12 @@ class OrderController extends Controller
         try {
             $order = DB::transaction(function() use ($request) {
                 // 1. Get and increment sequence number safely
-                $sequenceSetting = SystemSetting::where('key', 'order_sequence')->lockForUpdate()->first();
+                $sequenceSetting = SystemSetting::where('key', 'order_sequence')->first();
                 if (!$sequenceSetting) {
                     $sequenceSetting = SystemSetting::create([
                         'key' => 'order_sequence',
                         'value' => '0'
                     ]);
-                    $sequenceSetting = SystemSetting::where('key', 'order_sequence')->lockForUpdate()->first();
                 }
                 $seqVal = (int) $sequenceSetting->value + 1;
                 $sequenceSetting->value = (string) $seqVal;
