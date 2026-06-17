@@ -46,7 +46,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="lg:hidden text-text-2 hover:bg-surface-2 rounded-full"
+            className="text-text-2 hover:bg-surface-2 rounded-full"
           >
             <Menu size={20} />
           </Button>

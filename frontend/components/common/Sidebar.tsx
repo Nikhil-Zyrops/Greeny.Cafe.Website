@@ -66,11 +66,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
 
   const hasAccess = (itemRole: string) => {
-    if (!user) return itemRole === "customer";
+    if (!user) return itemRole === "customer" || itemRole === "staff";
     const userRole = user.role;
     if (userRole === "super_admin") return true;
     if (userRole === "admin") return itemRole !== "super_admin";
     if (userRole === "staff") return itemRole === "customer" || itemRole === "staff";
+    if (userRole === "customer") return itemRole === "customer" || itemRole === "staff";
     return itemRole === "customer";
   };
 
@@ -113,7 +114,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             Greeny Cafe
           </span>
         </div>
-        <button onClick={onClose} className="lg:hidden p-1.5 text-text-3 hover:text-text rounded-full hover:bg-surface-2 transition-colors">
+        <button onClick={onClose} className="p-1.5 text-text-3 hover:text-text rounded-full hover:bg-surface-2 transition-colors">
           <X size={18} />
         </button>
       </div>
@@ -122,7 +123,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
         {menuItems.map((item) => {
           const isItemActive = activeTab === item.key;
-          const isLocked = !hasAccess(item.roleRequired);
           
           return (
             <button
@@ -138,11 +138,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <item.icon size={18} className={isItemActive ? "text-white" : "text-text-3"} />
                 <span>{item.label}</span>
               </div>
-              {isLocked && (
-                <span className="text-[10px] text-text-3 font-semibold bg-surface-3 px-2 py-0.5 rounded-md flex items-center gap-1 border border-border">
-                  🔒 Locked
-                </span>
-              )}
             </button>
           );
         })}
@@ -184,12 +179,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop Sidebar (Static on the Left) */}
-      <aside className="hidden lg:flex w-64 flex-col h-screen fixed inset-y-0 left-0 z-30">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Drawer (Absolute overlay with Backdrop) */}
+      {/* Drawer overlay (Absolute overlay with Backdrop) */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -198,14 +188,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black z-40 lg:hidden"
+              className="fixed inset-0 bg-black z-40"
             />
             <motion.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="fixed inset-y-0 left-0 w-64 z-50 lg:hidden flex flex-col h-full shadow-2xl"
+              className="fixed inset-y-0 left-0 w-64 z-50 flex flex-col h-full shadow-2xl"
             >
               <SidebarContent />
             </motion.aside>

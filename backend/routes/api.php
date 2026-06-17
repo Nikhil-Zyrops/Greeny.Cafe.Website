@@ -27,6 +27,11 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{order_number}/track', [OrderController::class, 'track']);
 Route::post('/orders/{id}/whatsapp', [OrderController::class, 'sendWhatsApp']);
 
+// Unlocked Staff Queue and Performance Routes for guests/customers
+Route::get('/orders', [OrderController::class, 'index']);
+Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+Route::get('/staff/performance', [AnalyticsController::class, 'staffPerformance']);
+
 
 // ==========================================
 // 2. AUTHENTICATED ROUTES
@@ -35,14 +40,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
 
-    // ------------------------------------------
-    // Staff & Above Routes (Staff, Admin, Super Admin)
-    // ------------------------------------------
-    Route::middleware('role:staff,admin,super_admin')->group(function () {
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
-        Route::get('/staff/performance', [AnalyticsController::class, 'staffPerformance']);
-    });
 
     // ------------------------------------------
     // Admin & Above Routes (Admin, Super Admin)

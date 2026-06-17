@@ -31,28 +31,11 @@ export default function StaffDashboard() {
     customer_rating: 4.8
   });
 
-  // Verify auth
+  // Verify auth (staff page is unlocked for everyone)
   useEffect(() => {
     initialize();
-    const t = localStorage.getItem("token");
-    const uStr = localStorage.getItem("user");
-
-    if (!t || !uStr) {
-      router.push("/login");
-      return;
-    }
-
-    try {
-      const u = JSON.parse(uStr);
-      if (u.role === "customer") {
-        router.push("/customer");
-        return;
-      }
-      setLoading(false);
-    } catch {
-      router.push("/login");
-    }
-  }, [initialize, router]);
+    setLoading(false);
+  }, [initialize]);
 
   // Fetch orders and performance
   useEffect(() => {
@@ -104,7 +87,7 @@ export default function StaffDashboard() {
       <Toaster position="top-right" richColors />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
         <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
 
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
@@ -113,11 +96,11 @@ export default function StaffDashboard() {
           <Card className="border-border shadow-sm">
             <CardContent className="p-4 flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-xl text-primary font-display font-black mb-2">
-                {user?.name.slice(0, 2).toUpperCase()}
+                {user ? user.name.slice(0, 2).toUpperCase() : "GU"}
               </div>
-              <h3 className="font-bold text-text text-sm leading-tight">{user?.name}</h3>
+              <h3 className="font-bold text-text text-sm leading-tight">{user ? user.name : "Guest User"}</h3>
               <span className="text-[10px] text-text-3 font-semibold uppercase tracking-wider mt-0.5 capitalize">
-                {user?.role.replace("_", " ")}
+                {user ? user.role.replace("_", " ") : "guest"}
               </span>
               
               <div className="flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-700 dark:text-green-400 text-[10px] font-bold px-3 py-1 rounded-full mt-3">

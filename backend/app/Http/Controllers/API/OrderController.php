@@ -274,14 +274,16 @@ class OrderController extends Controller
         }
 
         try {
-            DB::transaction(function() use ($order, $newStatus, $oldStatus, $request) {
+            $user = request()->user('api') ?? auth()->user();
+
+            DB::transaction(function() use ($order, $newStatus, $oldStatus, $request, $user) {
                 $oldValue = $order->toArray();
 
                 $order->status = $newStatus;
 
                 // If accepted, link staff who accepted it
                 if ($newStatus === 'accepted') {
-                    $order->staff_id = auth()->id();
+                    $order->staff_id = $user ? $user->id : null;
                     
                     // Deduct Inventory Auto-Deduction!
                     $this->deductInventory($order);
@@ -291,8 +293,8 @@ class OrderController extends Controller
 
                 // Write Audit Log
                 AuditLog::create([
-                    'user_id' => auth()->id(),
-                    'user_name' => auth()->user()->name,
+                    'user_id' => $user ? $user->id : null,
+                    'user_name' => $user ? $user->name : 'Guest Customer',
                     'action' => 'update_order_status',
                     'entity_type' => 'order',
                     'entity_id' => $order->id,
