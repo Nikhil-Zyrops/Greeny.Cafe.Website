@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
 import { MenuItem, Ingredient, Order, FoodType } from "@/types";
 import Topbar from "@/components/common/Topbar";
+import Sidebar from "@/components/common/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import RevenueCalendar from "@/components/admin/RevenueCalendar";
 import { WeeklyRevenueChart, PeakHoursChart, TopSellingItemsChart } from "@/components/admin/AnalyticsChart";
@@ -42,6 +43,7 @@ interface TopItemData {
 export default function AdminDashboard() {
   const router = useRouter();
   const { initialize } = useAuthStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"dashboard" | "menu" | "inventory" | "orders" | "analytics" | "calendar">("dashboard");
   const [loading, setLoading] = useState(true);
@@ -162,6 +164,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (loading) return;
     loadData();
+    const interval = setInterval(loadData, 15000);
+    return () => clearInterval(interval);
   }, [loading]);
 
   if (loading) {
@@ -271,9 +275,12 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg transition-colors">
+    <div className="flex min-h-screen bg-bg transition-colors">
       <Toaster position="top-right" richColors />
-      <Topbar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 overflow-x-hidden">
+        <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
 
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
         {/* Sidebar Nav */}
@@ -922,6 +929,7 @@ export default function AdminDashboard() {
             </motion.div>
           </AnimatePresence>
         </main>
+      </div>
       </div>
     </div>
   );

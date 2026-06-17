@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminController extends Controller
 {
@@ -391,6 +392,46 @@ class SuperAdminController extends Controller
     }
 
     /**
+     * Recursively convert BSON types to serializable array formats.
+     */
+    private function serializeMongoData($value)
+    {
+        if ($value instanceof \MongoDB\BSON\ObjectId) {
+            return ['$type' => 'oid', 'value' => (string) $value];
+        }
+        if ($value instanceof \MongoDB\BSON\UTCDateTime) {
+            return ['$type' => 'date', 'value' => $value->toDateTime()->format(\DateTime::ATOM)];
+        }
+        if (is_array($value)) {
+            foreach ($value as $key => $subVal) {
+                $value[$key] = $this->serializeMongoData($subVal);
+            }
+        }
+        return $value;
+    }
+
+    /**
+     * Recursively reconstruct BSON types from serialized array formats.
+     */
+    private function deserializeMongoData($value)
+    {
+        if (is_array($value)) {
+            if (isset($value['$type'])) {
+                if ($value['$type'] === 'oid') {
+                    return new \MongoDB\BSON\ObjectId($value['value']);
+                }
+                if ($value['$type'] === 'date') {
+                    return new \MongoDB\BSON\UTCDateTime(new \DateTime($value['value']));
+                }
+            }
+            foreach ($value as $key => $subVal) {
+                $value[$key] = $this->deserializeMongoData($subVal);
+            }
+        }
+        return $value;
+    }
+
+    /**
      * Backup: Run a database backup (super_admin).
      */
     public function runBackup(Request $request)
@@ -400,30 +441,75 @@ class SuperAdminController extends Controller
             File::makeDirectory($backupDir, 0755, true);
         }
 
-        $filename = 'backup_' . date('Y_m_d_H_i_s') . '.sql';
-        $filepath = $backupDir . '/' . $filename;
+        $driver = DB::connection()->getDriverName();
 
-        // Path to mysqldump.exe
-        $mysqldumpPath = 'C:\Codes\Greeny-Cafe\mariadb\bin\mysqldump.exe';
+        if ($driver === 'mongodb') {
+            $filename = 'backup_' . date('Y_m_d_H_i_s') . '.json';
+            $filepath = $backupDir . '/' . $filename;
 
-        if (!File::exists($mysqldumpPath)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'MariaDB mysqldump utility not found. Cannot perform backup.'
-            ], 500);
-        }
+            try {
+                $data = [
+                    'users' => \App\Models\User::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'menu_items' => \App\Models\MenuItem::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'ingredients' => \App\Models\Ingredient::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'orders' => \App\Models\Order::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'order_items' => \App\Models\OrderItem::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'inventory_transactions' => \App\Models\InventoryTransaction::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'system_settings' => \App\Models\SystemSetting::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    'audit_logs' => \App\Models\AuditLog::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                ];
+                
+                // Recursively serialize BSON objects to clean JSON format
+                $serializedData = $this->serializeMongoData($data);
+                
+                File::put($filepath, json_encode($serializedData, JSON_PRETTY_PRINT));
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'MongoDB backup failed: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            $filename = 'backup_' . date('Y_m_d_H_i_s') . '.sql';
+            $filepath = $backupDir . '/' . $filename;
 
-        // Run backup shell command
-        // Note: MariaDB root user has no password in our setup
-        $cmd = "\"{$mysqldumpPath}\" -h 127.0.0.1 -u root greeny_cafe > \"{$filepath}\"";
-        
-        exec($cmd, $output, $resultCode);
+            // Path to mysqldump.exe
+            $mysqldumpPath = 'C:\Codes\Greeny-Cafe\mariadb\bin\mysqldump.exe';
 
-        if ($resultCode !== 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Database backup failed with exit code ' . $resultCode
-            ], 500);
+            if (!File::exists($mysqldumpPath)) {
+                // Fallback to JSON backup if utility not found
+                try {
+                    $filename = 'backup_' . date('Y_m_d_H_i_s') . '.json';
+                    $filepath = $backupDir . '/' . $filename;
+                    $data = [
+                        'users' => \App\Models\User::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'menu_items' => \App\Models\MenuItem::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'ingredients' => \App\Models\Ingredient::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'orders' => \App\Models\Order::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'order_items' => \App\Models\OrderItem::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'inventory_transactions' => \App\Models\InventoryTransaction::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'system_settings' => \App\Models\SystemSetting::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                        'audit_logs' => \App\Models\AuditLog::all()->map(fn($m) => $m->getAttributes())->toArray(),
+                    ];
+                    File::put($filepath, json_encode($data, JSON_PRETTY_PRINT));
+                } catch (\Throwable $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'JSON backup fallback failed: ' . $e->getMessage()
+                    ], 500);
+                }
+            } else {
+                // Run backup shell command
+                $cmd = "\"{$mysqldumpPath}\" -h 127.0.0.1 -u root greeny_cafe > \"{$filepath}\"";
+                exec($cmd, $output, $resultCode);
+
+                if ($resultCode !== 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Database backup failed with exit code ' . $resultCode
+                    ], 500);
+                }
+            }
         }
 
         // Write Audit Log
@@ -448,7 +534,7 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Restore: Restore database from uploaded SQL backup file.
+     * Restore: Restore database from uploaded backup file.
      */
     public function restoreBackup(Request $request)
     {
@@ -465,34 +551,76 @@ class SuperAdminController extends Controller
         }
 
         $file = $request->file('backup_file');
+        $extension = $file->getClientOriginalExtension();
         
-        // Save file to a temp location
-        $tempPath = $file->storeAs('temp', 'restore.sql');
-        $absolutePath = storage_path('app/' . $tempPath);
+        if ($extension === 'json') {
+            try {
+                $content = File::get($file->getRealPath());
+                $serializedData = json_decode($content, true);
 
-        // Path to mysql.exe
-        $mysqlPath = 'C:\Codes\Greeny-Cafe\mariadb\bin\mysql.exe';
+                if (!$serializedData) {
+                    throw new \Exception("Invalid JSON format or empty file.");
+                }
 
-        if (!File::exists($mysqlPath)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'MariaDB mysql utility not found. Cannot perform restore.'
-            ], 500);
-        }
+                // Recursively deserialize wrappers back to real BSON objects
+                $data = $this->deserializeMongoData($serializedData);
 
-        // Run mysql restore shell command
-        $cmd = "\"{$mysqlPath}\" -h 127.0.0.1 -u root greeny_cafe < \"{$absolutePath}\"";
-        
-        exec($cmd, $output, $resultCode);
+                // Truncate and import each table/collection safely
+                $tables = [
+                    'users' => 'users',
+                    'menu_items' => 'menu_items',
+                    'ingredients' => 'ingredients',
+                    'orders' => 'orders',
+                    'order_items' => 'order_items',
+                    'inventory_transactions' => 'inventory_transactions',
+                    'system_settings' => 'system_settings',
+                    'audit_logs' => 'audit_logs'
+                ];
 
-        // Clean up temp file
-        Storage::delete($tempPath);
+                foreach ($tables as $key => $tableName) {
+                    if (isset($data[$key])) {
+                        DB::table($tableName)->truncate();
+                        if (!empty($data[$key])) {
+                            DB::table($tableName)->insert($data[$key]);
+                        }
+                    }
+                }
 
-        if ($resultCode !== 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Database restore failed with exit code ' . $resultCode
-            ], 500);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'JSON restore failed: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            // Save file to a temp location
+            $tempPath = $file->storeAs('temp', 'restore.sql');
+            $absolutePath = storage_path('app/' . $tempPath);
+
+            // Path to mysql.exe
+            $mysqlPath = 'C:\Codes\Greeny-Cafe\mariadb\bin\mysql.exe';
+
+            if (!File::exists($mysqlPath)) {
+                Storage::delete($tempPath);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'MariaDB mysql utility not found. Cannot perform restore.'
+                ], 500);
+            }
+
+            // Run mysql restore shell command
+            $cmd = "\"{$mysqlPath}\" -h 127.0.0.1 -u root greeny_cafe < \"{$absolutePath}\"";
+            exec($cmd, $output, $resultCode);
+
+            // Clean up temp file
+            Storage::delete($tempPath);
+
+            if ($resultCode !== 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Database restore failed with exit code ' . $resultCode
+                ], 500);
+            }
         }
 
         // Write Audit Log
@@ -521,7 +649,8 @@ class SuperAdminController extends Controller
         if (File::exists($backupDir)) {
             $files = File::files($backupDir);
             foreach ($files as $file) {
-                if ($file->getExtension() === 'sql') {
+                $ext = $file->getExtension();
+                if ($ext === 'sql' || $ext === 'json') {
                     $backups[] = [
                         'filename' => $file->getFilename(),
                         'size' => round($file->getSize() / 1024, 2) . ' KB',

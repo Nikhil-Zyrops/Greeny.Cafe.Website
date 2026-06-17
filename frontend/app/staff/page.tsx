@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderStore } from "@/store/useOrderStore";
 import api from "@/lib/api";
 import Topbar from "@/components/common/Topbar";
+import Sidebar from "@/components/common/Sidebar";
 import OrderQueueCard from "@/components/staff/OrderQueueCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,6 +19,7 @@ export default function StaffDashboard() {
   const router = useRouter();
   const { user, initialize } = useAuthStore();
   const { orders, fetchOrders } = useOrderStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"queue" | "performance">("queue");
   const [loading, setLoading] = useState(true);
@@ -98,9 +100,12 @@ export default function StaffDashboard() {
   const historyOrders = orders.filter((o) => ["served", "cancelled"].includes(o.status));
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg transition-colors">
+    <div className="flex min-h-screen bg-bg transition-colors">
       <Toaster position="top-right" richColors />
-      <Topbar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 overflow-x-hidden">
+        <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
 
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
         {/* Sidebar Nav */}
@@ -319,6 +324,7 @@ export default function StaffDashboard() {
             )}
           </AnimatePresence>
         </main>
+      </div>
       </div>
     </div>
   );

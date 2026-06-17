@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { MenuItem, Order, OrderStatus } from "@/types";
 import { useCartStore } from "@/store/useCartStore";
 import Topbar from "@/components/common/Topbar";
+import Sidebar from "@/components/common/Sidebar";
 import MenuCard from "@/components/customer/MenuCard";
 import CheckoutModal from "@/components/customer/CheckoutModal";
 import SuccessModal from "@/components/customer/SuccessModal";
@@ -18,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function CustomerPage() {
   const { items, subtotal, tax, total, updateQty, removeItem, clearCart, setTaxRate } = useCartStore();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Component States
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -183,9 +185,12 @@ export default function CustomerPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg transition-colors">
+    <div className="flex min-h-screen bg-bg transition-colors">
       <Toaster position="top-right" richColors />
-      <Topbar />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      <div className="flex-1 flex flex-col min-h-screen lg:pl-64 overflow-x-hidden">
+        <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
         
@@ -524,6 +529,7 @@ export default function CustomerPage() {
         </div>
 
       </main>
+      </div>
 
       {/* Modals */}
       <CheckoutModal

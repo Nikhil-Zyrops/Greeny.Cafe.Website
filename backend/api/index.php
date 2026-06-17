@@ -49,12 +49,6 @@ try {
     exit;
 }
 
-// Force-update the whatsapp_number setting value in the SQLite database to the user's phone number
-try {
-    \App\Models\SystemSetting::where('key', 'whatsapp_number')->update(['value' => '+917907937153']);
-} catch (\Throwable $t) {
-    // Ignore if DB not seeded yet
-}
 
 // 7. Handle the request
 $app->handleRequest(\Illuminate\Http\Request::capture());
